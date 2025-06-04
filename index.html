@@ -79,6 +79,24 @@
   let watchStart = null;
   let totalWatchSeconds = 0;
 
+  function getBrowserInfo() {
+    const ua = navigator.userAgent;
+    let browser = "Unknown", os = "Unknown";
+
+    if (ua.includes("Firefox")) browser = "Firefox";
+    else if (ua.includes("Edg")) browser = "Edge";
+    else if (ua.includes("Chrome")) browser = "Chrome";
+    else if (ua.includes("Safari")) browser = "Safari";
+
+    if (ua.includes("Windows")) os = "Windows";
+    else if (ua.includes("Mac")) os = "MacOS";
+    else if (ua.includes("Linux")) os = "Linux";
+    else if (/Android/.test(ua)) os = "Android";
+    else if (/iPhone|iPad/.test(ua)) os = "iOS";
+
+    return { browser, os };
+  }
+
   function onYouTubeIframeAPIReady() {
     player = new YT.Player("ytplayer", {
       events: {
@@ -106,24 +124,34 @@
   }
 
   function sendWatchData(durationInSeconds) {
-    fetch(
-      "https://script.google.com/macros/s/AKfycbwSmHSvKrcznFbPzHnSxNxXjOOa5RhJm53Oc54YQ-FTUGY1L1lbpbW0QGcLb81DvUiDpw/exec",
-      {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+    const { browser, os } = getBrowserInfo();
+
+    fetch("https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN_HERE")
+      .then(res => res.json())
+      .then(ipData => {
+        const payload = {
           user: userId,
           video: videoId,
           duration: durationInSeconds,
-        }),
-      }
-    ).catch((err) => console.error("Failed to send watch data", err));
+          browser,
+          os,
+          ip: ipData.ip,
+          region: ipData.region || ipData.city || "Unknown",
+        };
+
+        fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      })
+      .catch(err => console.error("IP fetch failed", err));
   }
 
-  // Load YouTube IFrame API
+  // YouTube API Loader
   const tag = document.createElement("script");
   tag.src = "https://www.youtube.com/iframe_api";
   document.body.appendChild(tag);
