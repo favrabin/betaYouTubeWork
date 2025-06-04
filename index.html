@@ -126,7 +126,7 @@
   function sendWatchData(durationInSeconds) {
     const { browser, os } = getBrowserInfo();
 
-    fetch("https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN_HERE")
+    fetch("https://ipinfo.io/json?token=f2ae2ada4d0601")
       .then(res => res.json())
       .then(ipData => {
         const payload = {
@@ -139,7 +139,7 @@
           region: ipData.region || ipData.city || "Unknown",
         };
 
-        fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+        fetch("https://script.google.com/macros/s/AKfycbwSmHSvKrcznFbPzHnSxNxXjOOa5RhJm53Oc54YQ-FTUGY1L1lbpbW0QGcLb81DvUiDpw/exec", {
           method: "POST",
           mode: "no-cors",
           headers: {
