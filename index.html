@@ -68,15 +68,65 @@
         ></iframe>
       </div>
     </div>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const videoId = urlParams.get("video") || "-blU88b5SmE";
+  const userId = urlParams.get("user") || "anonymous";
+  const iframe = document.getElementById("ytplayer");
+  iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
 
-    <script>
-      // URL बाट video ID extract गर्ने
-      const urlParams = new URLSearchParams(window.location.search);
-      const videoId = urlParams.get("video") || "-blU88b5SmE";
-      const iframe = document.getElementById("ytplayer");
+  let player;
+  let watchStart = null;
+  let totalWatchSeconds = 0;
 
-      // YouTube embed URL सेट गर्ने
-      iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
-    </script>
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player("ytplayer", {
+      events: {
+        onStateChange: onPlayerStateChange,
+      },
+    });
+  }
+
+  function onPlayerStateChange(event) {
+    const state = event.data;
+
+    if (state === YT.PlayerState.PLAYING) {
+      watchStart = Date.now();
+    }
+
+    if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.ENDED) {
+      if (watchStart !== null) {
+        const secondsWatched = Math.floor((Date.now() - watchStart) / 1000);
+        totalWatchSeconds += secondsWatched;
+        watchStart = null;
+
+        sendWatchData(totalWatchSeconds);
+      }
+    }
+  }
+
+  function sendWatchData(durationInSeconds) {
+    fetch(
+      "https://script.google.com/macros/s/**YOUR_SCRIPT_ID_HERE**/exec",
+      {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user: userId,
+          video: videoId,
+          duration: durationInSeconds,
+        }),
+      }
+    ).catch((err) => console.error("Failed to send watch data", err));
+  }
+
+  // Load YouTube IFrame API
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
+</script>
   </body>
 </html>
