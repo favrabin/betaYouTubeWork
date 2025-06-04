@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>YT Watch Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+      iframe {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>मेरो YouTube भिडियो</h2>
+    
+    <iframe
+      id="ytplayer"
+      width="560"
+      height="315"
+      src="https://www.youtube.com/embed/-blU88b5SmE?enablejsapi=1"
+      frameborder="0"
+      allowfullscreen
+    ></iframe>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const user = urlParams.get("user") || "unknown";
+      const videoId = "-blU88b5SmE"; //vid-id
+      const webhookUrl = "https://script.google.com/macros/s/AKfycbwSmHSvKrcznFbPzHnSxNxXjOOa5RhJm53Oc54YQ-FTUGY1L1lbpbW0QGcLb81DvUiDpw/exec"; //apscrt-main
+
+      let player;
+      let startTime = null;
+      let watchInterval = null;
+      let totalWatchTime = 0;
+
+      function getOS() {
+        const platform = navigator.platform.toLowerCase();
+        if (platform.includes('win')) return 'Windows';
+        if (platform.includes('mac')) return 'MacOS';
+        if (/android/.test(navigator.userAgent.toLowerCase())) return 'Android';
+        if (/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())) return 'iOS';
+        return 'Other';
+      }
+
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('ytplayer', {
+          events: {
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+
+      function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING && !startTime) {
+          startTime = new Date().getTime();
+          watchInterval = setInterval(() => {
+            totalWatchTime += 1;
+          }, 1000);
+        }
+
+        if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+          clearInterval(watchInterval);
+          sendWatchData();
+          startTime = null;
+          totalWatchTime = 0;
+        }
+      }
+
+      function sendWatchData() {
+        const data = {
+          user: user,
+          watchTime: totalWatchTime,
+          browser: navigator.userAgent,
+          os: getOS(),
+          videoId: videoId
+        };
+
+        fetch(webhookUrl, {
+          method: 'POST',
+          body: JSON.stringify(data),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+
+      // Load YouTube API
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+    </script>
+  </body>
+</html>
